@@ -228,7 +228,7 @@ export default function SessionPage() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-hidden">
-        <div className="max-w-7xl mx-auto p-6 h-full">
+        <div className="max-w-8xl mx-auto p-6 h-full">
           {/* Debug Logs (Collapsible) */}
           {showDebugLogs && (
             <div className="bg-white rounded-lg shadow p-4 mb-4">
