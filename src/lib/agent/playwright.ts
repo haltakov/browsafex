@@ -101,8 +101,10 @@ export class PlaywrightComputer {
   }
 
   async start(): Promise<this> {
-    consola.info("Connecting to existing Chrome instance at localhost:9222...");
-    this._browser = await chromium.connectOverCDP("http://localhost:9222");
+    const browserUrl = process.env.BROWSER_URL || "http://localhost:9222";
+
+    consola.info(`Connecting to existing Chrome instance at ${browserUrl}...`);
+    this._browser = await chromium.connectOverCDP(browserUrl);
     this._context = await this._browser.newContext({
       viewport: {
         width: this._screenSize[0],
