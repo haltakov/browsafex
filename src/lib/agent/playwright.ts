@@ -86,6 +86,20 @@ export class PlaywrightComputer {
     await this._page!.goto(newUrl);
   }
 
+  /**
+   * Helper method to wait for page load with graceful timeout handling.
+   * If the timeout is reached, it logs a warning and continues anyway.
+   */
+  private async _waitForLoadStateSafe(): Promise<void> {
+    try {
+      await this._page!.waitForLoadState("load", { timeout: 60000 });
+    } catch (error: any) {
+      // If waitForLoadState times out, log warning and continue
+      // The page might still be in a usable state even if not fully loaded
+      consola.warn("Page still loading after timeout, continuing anyway...");
+    }
+  }
+
   async start(): Promise<this> {
     consola.info("Connecting to existing Chrome instance at localhost:9222...");
     this._browser = await chromium.connectOverCDP("http://localhost:9222");
@@ -96,6 +110,10 @@ export class PlaywrightComputer {
       },
     });
     this._page = await this._context.newPage();
+
+    // Set default timeout to 60 seconds for all operations
+    this._page.setDefaultTimeout(60000);
+
     await this._page.goto(this._initialUrl);
 
     this._context.on("page", (newPage) => this._handleNewPage(newPage));
@@ -118,14 +136,14 @@ export class PlaywrightComputer {
   async clickAt(x: number, y: number): Promise<EnvState> {
     await this.highlightMouse(x, y);
     await this._page!.mouse.click(x, y);
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
     return this.currentState();
   }
 
   async hoverAt(x: number, y: number): Promise<EnvState> {
     await this.highlightMouse(x, y);
     await this._page!.mouse.move(x, y);
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
     return this.currentState();
   }
 
@@ -134,11 +152,11 @@ export class PlaywrightComputer {
     y: number,
     text: string,
     pressEnter: boolean = false,
-    clearBeforeTyping: boolean = true,
+    clearBeforeTyping: boolean = true
   ): Promise<EnvState> {
     await this.highlightMouse(x, y);
     await this._page!.mouse.click(x, y);
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
 
     if (clearBeforeTyping) {
       if (process.platform === "darwin") {
@@ -150,12 +168,12 @@ export class PlaywrightComputer {
     }
 
     await this._page!.keyboard.type(text);
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
 
     if (pressEnter) {
       await this.keyCombination(["Enter"]);
     }
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
     return this.currentState();
   }
 
@@ -166,7 +184,7 @@ export class PlaywrightComputer {
     const scrollArgument = `${sign}${horizontalScrollAmount}`;
     // Scroll using JS.
     await this._page!.evaluate(`window.scrollBy(${scrollArgument}, 0);`);
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
     return this.currentState();
   }
 
@@ -186,12 +204,12 @@ export class PlaywrightComputer {
     x: number,
     y: number,
     direction: "up" | "down" | "left" | "right",
-    magnitude: number = 800,
+    magnitude: number = 800
   ): Promise<EnvState> {
     await this.highlightMouse(x, y);
 
     await this._page!.mouse.move(x, y);
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
 
     let dx = 0;
     let dy = 0;
@@ -208,7 +226,7 @@ export class PlaywrightComputer {
     }
 
     await this._page!.mouse.wheel(dx, dy);
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
     return this.currentState();
   }
 
@@ -219,13 +237,13 @@ export class PlaywrightComputer {
 
   async goBack(): Promise<EnvState> {
     await this._page!.goBack();
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
     return this.currentState();
   }
 
   async goForward(): Promise<EnvState> {
     await this._page!.goForward();
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
     return this.currentState();
   }
 
@@ -239,7 +257,7 @@ export class PlaywrightComputer {
       normalizedUrl = "https://" + normalizedUrl;
     }
     await this._page!.goto(normalizedUrl);
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
     return this.currentState();
   }
 
@@ -266,19 +284,20 @@ export class PlaywrightComputer {
   async dragAndDrop(x: number, y: number, destinationX: number, destinationY: number): Promise<EnvState> {
     await this.highlightMouse(x, y);
     await this._page!.mouse.move(x, y);
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
     await this._page!.mouse.down();
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
 
     await this.highlightMouse(destinationX, destinationY);
     await this._page!.mouse.move(destinationX, destinationY);
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
     await this._page!.mouse.up();
     return this.currentState();
   }
 
   async currentState(): Promise<EnvState> {
-    await this._page!.waitForLoadState();
+    await this._waitForLoadStateSafe();
+
     // Even if Playwright reports the page as loaded, it may not be so.
     // Add a manual sleep to make sure the page has finished rendering.
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -325,7 +344,7 @@ export class PlaywrightComputer {
           div.hidden = true;
         }, 2000);
       },
-      { x, y },
+      { x, y }
     );
     // Wait a bit for the user to see the cursor.
     await new Promise((resolve) => setTimeout(resolve, 1000));

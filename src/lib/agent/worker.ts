@@ -147,38 +147,56 @@ async function runAgentWithCapture(startUrl: string, instructions: string) {
       excludedPredefinedFunctions: ["drag_and_drop"],
     });
 
-    // Patch runOneIteration to capture iteration data
+    // Patch runOneIteration to capture iteration data and handle errors
     const originalRunOneIteration = agent.runOneIteration.bind(agent);
     agent.runOneIteration = async function () {
-      const result = await originalRunOneIteration();
+      try {
+        const result = await originalRunOneIteration();
 
-      // After iteration, extract and send structured data
-      // Access the last model response from the agent's contents
-      const agentContents = (agent as any)._contents;
-      if (agentContents && agentContents.length > 0) {
-        // Find the last model response (role: "model" or role: "assistant")
-        for (let i = agentContents.length - 1; i >= 0; i--) {
-          const content = agentContents[i];
-          if (content.role === "model" || content.role === "assistant") {
-            const thoughts = extractThoughts(content);
-            const commands = extractCommands(content);
+        // After iteration, extract and send structured data
+        // Access the last model response from the agent's contents
+        const agentContents = (agent as any)._contents;
+        if (agentContents && agentContents.length > 0) {
+          // Find the last model response (role: "model" or role: "assistant")
+          for (let i = agentContents.length - 1; i >= 0; i--) {
+            const content = agentContents[i];
+            if (content.role === "model" || content.role === "assistant") {
+              const thoughts = extractThoughts(content);
+              const commands = extractCommands(content);
 
-            if (thoughts || commands.length > 0) {
-              parentPort?.postMessage({
-                type: "iteration",
-                data: {
-                  timestamp: Date.now(),
-                  thoughts: thoughts || "(no reasoning provided)",
-                  commands,
-                },
-              });
+              if (thoughts || commands.length > 0) {
+                parentPort?.postMessage({
+                  type: "iteration",
+                  data: {
+                    timestamp: Date.now(),
+                    thoughts: thoughts || "(no reasoning provided)",
+                    commands,
+                  },
+                });
+              }
+              break;
             }
-            break;
           }
         }
-      }
 
-      return result;
+        return result;
+      } catch (error: any) {
+        // Handle timeout and other errors gracefully
+        consola.error("Error during agent iteration:", error.message);
+
+        // Send iteration data about the error
+        parentPort?.postMessage({
+          type: "iteration",
+          data: {
+            timestamp: Date.now(),
+            thoughts: `Error occurred: ${error.message}. Attempting to recover...`,
+            commands: ["(error recovery)"],
+          },
+        });
+
+        // Return CONTINUE to allow the agent to recover and try again
+        return "CONTINUE" as const;
+      }
     };
 
     // Run the agent loop with custom completion handler
@@ -221,21 +239,31 @@ async function runAgentWithCapture(startUrl: string, instructions: string) {
       type: "state",
       data: "completed",
     });
-  } catch (error) {
+
+    // Don't close browser on normal completion - allow user to inspect or continue
+    consola.success("✅ Agent loop completed. Browser remains open.");
+  } catch (error: any) {
     consola.error("Error in agent execution:", error);
+
+    // Send error iteration card
+    parentPort?.postMessage({
+      type: "iteration",
+      data: {
+        timestamp: Date.now(),
+        thoughts: `Fatal error: ${error.message}. Browser remains open for inspection.`,
+        commands: ["(agent stopped)"],
+      },
+    });
+
     parentPort?.postMessage({
       type: "state",
       data: "error",
     });
-  } finally {
-    // Clean up
-    if (computer) {
-      await computer.stop();
-      consola.info("\n🛑 Browser closed.");
-    }
-    if (fileLogger) {
-      fileLogger.close();
-    }
+
+    // Don't close the browser on error - keep it open for debugging/recovery
+    // Only close if explicitly terminated
+    consola.warn("⚠️  Agent encountered an error but browser remains open.");
+    consola.warn("⚠️  Use 'Finish Task' to close the browser, or 'Start New Session' to try again.");
   }
 }
 
@@ -272,8 +300,21 @@ parentPort?.on("message", (message: WorkerMessage) => {
 // Handle uncaught errors
 process.on("uncaughtException", (error) => {
   consola.error("Uncaught exception in worker:", error);
+
+  // Send error iteration card
+  parentPort?.postMessage({
+    type: "iteration",
+    data: {
+      timestamp: Date.now(),
+      thoughts: `Uncaught exception: ${error.message}. Browser remains open.`,
+      commands: ["(uncaught error)"],
+    },
+  });
+
   parentPort?.postMessage({
     type: "state",
     data: "error",
   });
+
+  consola.warn("⚠️  Uncaught exception occurred but browser remains open for debugging.");
 });
