@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { sessionManager, LogEntry, AgentIteration } from "@/lib/session-manager";
+import { sessionManager, LogEntry, AgentIteration, UserMessage } from "@/lib/session-manager";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -31,9 +31,14 @@ export async function GET(request: NextRequest) {
         controller.enqueue(encoder.encode(`data: ${data}\n\n`));
       }
 
-      // Send existing iterations
-      for (const iteration of session.iterations) {
-        const data = JSON.stringify({ type: "iteration", data: iteration });
+      // Send existing user messages and iterations in chronological order
+      const activities = [
+        ...session.userMessages.map((msg) => ({ type: "userMessage" as const, data: msg })),
+        ...session.iterations.map((iter) => ({ type: "iteration" as const, data: iter })),
+      ].sort((a, b) => a.data.timestamp - b.data.timestamp);
+
+      for (const activity of activities) {
+        const data = JSON.stringify(activity);
         controller.enqueue(encoder.encode(`data: ${data}\n\n`));
       }
 
@@ -62,10 +67,16 @@ export async function GET(request: NextRequest) {
         controller.enqueue(encoder.encode(`data: ${data}\n\n`));
       };
 
+      const onUserMessage = (message: UserMessage) => {
+        const data = JSON.stringify({ type: "userMessage", data: message });
+        controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+      };
+
       session.eventEmitter.on("log", onLog);
       session.eventEmitter.on("screenshot", onScreenshot);
       session.eventEmitter.on("state", onState);
       session.eventEmitter.on("iteration", onIteration);
+      session.eventEmitter.on("userMessage", onUserMessage);
 
       // Cleanup on close
       request.signal.addEventListener("abort", () => {
@@ -73,6 +84,7 @@ export async function GET(request: NextRequest) {
         session.eventEmitter.off("screenshot", onScreenshot);
         session.eventEmitter.off("state", onState);
         session.eventEmitter.off("iteration", onIteration);
+        session.eventEmitter.off("userMessage", onUserMessage);
         controller.close();
       });
 

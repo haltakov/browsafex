@@ -13,6 +13,11 @@ export interface AgentIteration {
   commands: string[];
 }
 
+export interface UserMessage {
+  timestamp: number;
+  content: string;
+}
+
 export interface SessionData {
   id: string;
   startUrl: string;
@@ -20,6 +25,7 @@ export interface SessionData {
   logs: LogEntry[];
   screenshots: string[]; // base64 encoded
   iterations: AgentIteration[];
+  userMessages: UserMessage[];
   state: "initializing" | "running" | "completed" | "error" | "terminated";
   createdAt: number;
   eventEmitter: EventEmitter;
@@ -37,6 +43,7 @@ class SessionManager {
       logs: [],
       screenshots: [],
       iterations: [],
+      userMessages: [],
       state: "initializing",
       createdAt: Date.now(),
       eventEmitter: new EventEmitter(),
@@ -85,6 +92,14 @@ class SessionManager {
     if (session) {
       session.iterations.push(iteration);
       session.eventEmitter.emit("iteration", iteration);
+    }
+  }
+
+  addUserMessage(sessionId: string, message: UserMessage): void {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.userMessages.push(message);
+      session.eventEmitter.emit("userMessage", message);
     }
   }
 

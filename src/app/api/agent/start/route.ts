@@ -27,6 +27,12 @@ export async function POST(request: NextRequest) {
     // Update session with worker
     sessionManager.updateSession(session.id, { worker });
 
+    // Add initial prompt as a user message
+    sessionManager.addUserMessage(session.id, {
+      timestamp: Date.now(),
+      content: initialPrompt,
+    });
+
     // Handle messages from worker
     worker.on("message", (message) => {
       if (message.type === "log") {

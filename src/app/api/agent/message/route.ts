@@ -19,6 +19,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Worker not available" }, { status: 400 });
     }
 
+    // Add user message to session
+    sessionManager.addUserMessage(sessionId, {
+      timestamp: Date.now(),
+      content: message,
+    });
+
     // Send message to worker
     session.worker.postMessage({
       type: "continue",

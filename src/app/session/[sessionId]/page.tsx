@@ -9,12 +9,6 @@ interface LogEntry {
   content: string;
 }
 
-interface AgentIteration {
-  timestamp: number;
-  thoughts: string;
-  commands: string[];
-}
-
 interface ActivityItem {
   type: "user" | "agent";
   timestamp: number;
@@ -76,6 +70,15 @@ export default function SessionPage() {
                 commands: data.data.commands,
               },
             ]);
+          } else if (data.type === "userMessage") {
+            setActivity((prev) => [
+              ...prev,
+              {
+                type: "user",
+                timestamp: data.data.timestamp,
+                content: data.data.content,
+              },
+            ]);
           }
         } catch (error) {
           console.error("Error parsing SSE data:", error);
@@ -97,16 +100,6 @@ export default function SessionPage() {
     if (!sessionId || !currentPrompt) {
       return;
     }
-
-    // Add user message to activity
-    setActivity((prev) => [
-      ...prev,
-      {
-        type: "user",
-        timestamp: Date.now(),
-        content: currentPrompt,
-      },
-    ]);
 
     const message = currentPrompt;
     setCurrentPrompt("");
