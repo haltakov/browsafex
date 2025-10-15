@@ -181,7 +181,32 @@ async function runAgentWithCapture(startUrl: string, instructions: string) {
 
         return result;
       } catch (error: any) {
-        // Handle timeout and other errors gracefully
+        // Check if it's a Gemini overload error
+        if (error.message?.includes("GEMINI_OVERLOADED:")) {
+          const userMessage = error.message.replace("GEMINI_OVERLOADED:", "").trim();
+          consola.error("🚫 Gemini API Overloaded:", userMessage);
+
+          // Send user-friendly iteration data about the overload
+          parentPort?.postMessage({
+            type: "iteration",
+            data: {
+              timestamp: Date.now(),
+              thoughts: `⚠️ **Gemini API is Overloaded**\n\n${userMessage}\n\nThe model is currently experiencing high demand. This is temporary and not an error with your task. You can:\n- Wait a few moments and send a new message to continue\n- Try again later\n- The browser will remain open for you to inspect or continue when ready`,
+              commands: ["(waiting for API availability)"],
+            },
+          });
+
+          // Set state to completed so user can retry
+          parentPort?.postMessage({
+            type: "state",
+            data: "completed",
+          });
+
+          // Return COMPLETE to stop the loop and wait for user action
+          return "COMPLETE" as const;
+        }
+
+        // Handle other errors gracefully
         consola.error("Error during agent iteration:", error.message);
 
         // Send iteration data about the error

@@ -171,7 +171,18 @@ export class BrowserAgent {
           config: this._generateContentConfig,
         });
         return response;
-      } catch (e) {
+      } catch (e: any) {
+        // Check if it's an overload error
+        const isOverloadError = this._isOverloadError(e);
+
+        if (isOverloadError) {
+          consola.error("⚠️  Gemini API is currently overloaded");
+          // For overload errors, throw immediately without retrying
+          throw new Error(
+            "GEMINI_OVERLOADED: The Gemini API is currently experiencing high demand. Please try again in a few moments."
+          );
+        }
+
         consola.error(e);
         if (attempt < maxRetries - 1) {
           const delay = baseDelayS * Math.pow(2, attempt);
@@ -184,6 +195,32 @@ export class BrowserAgent {
       }
     }
     throw new Error("Unexpected error in getModelResponse");
+  }
+
+  /**
+   * Checks if an error is a Gemini API overload error.
+   */
+  private _isOverloadError(error: any): boolean {
+    if (!error) return false;
+
+    const errorMessage = error.message?.toLowerCase() || "";
+    const errorString = error.toString?.()?.toLowerCase() || "";
+
+    // Check for common overload error indicators
+    const overloadIndicators = [
+      "overloaded",
+      "resource exhausted",
+      "quota exceeded",
+      "rate limit",
+      "capacity",
+      "too many requests",
+      "429",
+      "503",
+      "service unavailable",
+      "temporarily unavailable",
+    ];
+
+    return overloadIndicators.some((indicator) => errorMessage.includes(indicator) || errorString.includes(indicator));
   }
 
   /**
@@ -229,7 +266,12 @@ export class BrowserAgent {
         consola.info("⏳ Generating response from Gemini Computer Use...");
       }
       response = await this.getModelResponse();
-    } catch (e) {
+    } catch (e: any) {
+      // Re-throw overload errors so they can be handled by the worker
+      if (e.message?.includes("GEMINI_OVERLOADED:")) {
+        throw e;
+      }
+      // For other errors, just complete the loop
       return "COMPLETE";
     }
 
