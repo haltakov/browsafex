@@ -2,6 +2,9 @@ import { PlaywrightComputer } from "./playwright.js";
 import { BrowserAgent } from "./agent.js";
 import { consola } from "consola";
 
+export { PlaywrightComputer, BrowserAgent };
+export type { EnvState } from "./playwright.js";
+
 export async function run_agent(start_url: string, instructions: string) {
   // Initialize the Playwright computer
   const computer = new PlaywrightComputer({
@@ -35,7 +38,7 @@ export async function run_agent(start_url: string, instructions: string) {
     }
   } finally {
     // Clean up
-    // await computer.stop();
-    // consola.info("\n🛑 Browser closed.");
+    await computer.stop();
+    consola.info("\n🛑 Browser closed.");
   }
 }

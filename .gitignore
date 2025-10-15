@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# browser agent logs
+/logs/*.log
+
+# Browser profile
+/profile

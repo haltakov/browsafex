@@ -1,0 +1,3 @@
+# This directory stores agent log files
+# Files in this directory are ignored by git (see .gitignore)
+

@@ -416,35 +416,58 @@ export class BrowserAgent {
   /**
    * Main agent loop.
    */
-  async agentLoop(): Promise<void> {
+  async agentLoop(onComplete?: () => Promise<string | null>): Promise<void> {
     while (true) {
       const status = await this.runOneIteration();
 
       if (status === "COMPLETE") {
-        // Prompt user for new instructions or to stop
-        consola.success("\n🎯 Task completed!");
-        const continueAgent = await consola.prompt("Do you want to continue with new instructions?", {
-          type: "confirm",
-          initial: true,
-        });
+        // If a callback is provided, use it to get new instructions
+        if (onComplete) {
+          const newInstructions = await onComplete();
+          if (!newInstructions) {
+            break;
+          }
+          // Add new user message to conversation
+          this._contents.push({
+            role: "user",
+            parts: [{ text: newInstructions }],
+          });
+        } else {
+          // Default behavior for console mode
+          consola.success("\n🎯 Task completed!");
+          const continueAgent = await consola.prompt("Do you want to continue with new instructions?", {
+            type: "confirm",
+            initial: true,
+          });
 
-        if (!continueAgent) {
-          break;
+          if (!continueAgent) {
+            break;
+          }
+
+          // Get new instructions from user
+          const newInstructions = await consola.prompt("Enter new instructions:", {
+            type: "text",
+            required: true,
+          });
+
+          // Add new user message to conversation
+          this._contents.push({
+            role: "user",
+            parts: [{ text: newInstructions }],
+          });
         }
-
-        // Get new instructions from user
-        const newInstructions = await consola.prompt("Enter new instructions:", {
-          type: "text",
-          required: true,
-        });
-
-        // Add new user message to conversation
-        this._contents.push({
-          role: "user",
-          parts: [{ text: newInstructions }],
-        });
       }
     }
+  }
+
+  /**
+   * Add a message to the conversation (for web interface).
+   */
+  addMessage(message: string): void {
+    this._contents.push({
+      role: "user",
+      parts: [{ text: message }],
+    });
   }
 
   /**
