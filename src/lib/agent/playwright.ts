@@ -1,0 +1,333 @@
+import { chromium, Browser, BrowserContext, Page } from "playwright";
+import { consola } from "consola";
+
+// Mapping of keys to Playwright keys
+const PLAYWRIGHT_KEY_MAP: Record<string, string> = {
+  backspace: "Backspace",
+  tab: "Tab",
+  return: "Enter", // Playwright uses 'Enter'
+  enter: "Enter",
+  shift: "Shift",
+  control: "ControlOrMeta",
+  alt: "Alt",
+  escape: "Escape",
+  space: "Space", // Can also just be " "
+  pageup: "PageUp",
+  pagedown: "PageDown",
+  end: "End",
+  home: "Home",
+  left: "ArrowLeft",
+  up: "ArrowUp",
+  right: "ArrowRight",
+  down: "ArrowDown",
+  insert: "Insert",
+  delete: "Delete",
+  semicolon: ";", // For actual character ';'
+  equals: "=", // For actual character '='
+  multiply: "Multiply", // NumpadMultiply
+  add: "Add", // NumpadAdd
+  separator: "Separator", // Numpad specific
+  subtract: "Subtract", // NumpadSubtract, or just '-' for character
+  decimal: "Decimal", // NumpadDecimal, or just '.' for character
+  divide: "Divide", // NumpadDivide, or just '/' for character
+  f1: "F1",
+  f2: "F2",
+  f3: "F3",
+  f4: "F4",
+  f5: "F5",
+  f6: "F6",
+  f7: "F7",
+  f8: "F8",
+  f9: "F9",
+  f10: "F10",
+  f11: "F11",
+  f12: "F12",
+  command: "Meta", // 'Meta' is Command on macOS, Windows key on Windows
+};
+
+export interface EnvState {
+  screenshot: Buffer;
+  url: string;
+}
+
+export class PlaywrightComputer {
+  private _initialUrl: string;
+  private _screenSize: [number, number];
+  private _searchEngineUrl: string;
+  private _highlightMouse: boolean;
+  private _browser?: Browser;
+  private _context?: BrowserContext;
+  private _page?: Page;
+
+  /**
+   * Connects to a local Playwright instance.
+   */
+  constructor(options: {
+    screenSize: [number, number];
+    initialUrl?: string;
+    searchEngineUrl?: string;
+    highlightMouse?: boolean;
+  }) {
+    this._screenSize = options.screenSize;
+    this._initialUrl = options.initialUrl || "https://www.google.com";
+    this._searchEngineUrl = options.searchEngineUrl || "https://www.google.com";
+    this._highlightMouse = options.highlightMouse || false;
+  }
+
+  /**
+   * The Computer Use model only supports a single tab at the moment.
+   *
+   * Some websites, however, try to open links in a new tab.
+   * For those situations, we intercept the page-opening behavior, and instead overwrite the current page.
+   */
+  private async _handleNewPage(newPage: Page): Promise<void> {
+    const newUrl = newPage.url();
+    await newPage.close();
+    await this._page!.goto(newUrl);
+  }
+
+  async start(): Promise<this> {
+    consola.info("Connecting to existing Chrome instance at localhost:9222...");
+    this._browser = await chromium.connectOverCDP("http://localhost:9222");
+    this._context = await this._browser.newContext({
+      viewport: {
+        width: this._screenSize[0],
+        height: this._screenSize[1],
+      },
+    });
+    this._page = await this._context.newPage();
+    await this._page.goto(this._initialUrl);
+
+    this._context.on("page", (newPage) => this._handleNewPage(newPage));
+
+    consola.success("Connected to existing Chrome instance.");
+
+    return this;
+  }
+
+  async stop(): Promise<void> {
+    if (this._context) {
+      await this._context.close();
+    }
+  }
+
+  async openWebBrowser(): Promise<EnvState> {
+    return this.currentState();
+  }
+
+  async clickAt(x: number, y: number): Promise<EnvState> {
+    await this.highlightMouse(x, y);
+    await this._page!.mouse.click(x, y);
+    await this._page!.waitForLoadState();
+    return this.currentState();
+  }
+
+  async hoverAt(x: number, y: number): Promise<EnvState> {
+    await this.highlightMouse(x, y);
+    await this._page!.mouse.move(x, y);
+    await this._page!.waitForLoadState();
+    return this.currentState();
+  }
+
+  async typeTextAt(
+    x: number,
+    y: number,
+    text: string,
+    pressEnter: boolean = false,
+    clearBeforeTyping: boolean = true,
+  ): Promise<EnvState> {
+    await this.highlightMouse(x, y);
+    await this._page!.mouse.click(x, y);
+    await this._page!.waitForLoadState();
+
+    if (clearBeforeTyping) {
+      if (process.platform === "darwin") {
+        await this.keyCombination(["Command", "A"]);
+      } else {
+        await this.keyCombination(["Control", "A"]);
+      }
+      await this.keyCombination(["Delete"]);
+    }
+
+    await this._page!.keyboard.type(text);
+    await this._page!.waitForLoadState();
+
+    if (pressEnter) {
+      await this.keyCombination(["Enter"]);
+    }
+    await this._page!.waitForLoadState();
+    return this.currentState();
+  }
+
+  private async _horizontalDocumentScroll(direction: "left" | "right"): Promise<EnvState> {
+    // Scroll by 50% of the viewport size.
+    const horizontalScrollAmount = this.screenSize()[0] / 2;
+    const sign = direction === "left" ? "-" : "";
+    const scrollArgument = `${sign}${horizontalScrollAmount}`;
+    // Scroll using JS.
+    await this._page!.evaluate(`window.scrollBy(${scrollArgument}, 0);`);
+    await this._page!.waitForLoadState();
+    return this.currentState();
+  }
+
+  async scrollDocument(direction: "up" | "down" | "left" | "right"): Promise<EnvState> {
+    if (direction === "down") {
+      return this.keyCombination(["PageDown"]);
+    } else if (direction === "up") {
+      return this.keyCombination(["PageUp"]);
+    } else if (direction === "left" || direction === "right") {
+      return this._horizontalDocumentScroll(direction);
+    } else {
+      throw new Error("Unsupported direction: " + direction);
+    }
+  }
+
+  async scrollAt(
+    x: number,
+    y: number,
+    direction: "up" | "down" | "left" | "right",
+    magnitude: number = 800,
+  ): Promise<EnvState> {
+    await this.highlightMouse(x, y);
+
+    await this._page!.mouse.move(x, y);
+    await this._page!.waitForLoadState();
+
+    let dx = 0;
+    let dy = 0;
+    if (direction === "up") {
+      dy = -magnitude;
+    } else if (direction === "down") {
+      dy = magnitude;
+    } else if (direction === "left") {
+      dx = -magnitude;
+    } else if (direction === "right") {
+      dx = magnitude;
+    } else {
+      throw new Error("Unsupported direction: " + direction);
+    }
+
+    await this._page!.mouse.wheel(dx, dy);
+    await this._page!.waitForLoadState();
+    return this.currentState();
+  }
+
+  async wait5Seconds(): Promise<EnvState> {
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    return this.currentState();
+  }
+
+  async goBack(): Promise<EnvState> {
+    await this._page!.goBack();
+    await this._page!.waitForLoadState();
+    return this.currentState();
+  }
+
+  async goForward(): Promise<EnvState> {
+    await this._page!.goForward();
+    await this._page!.waitForLoadState();
+    return this.currentState();
+  }
+
+  async search(): Promise<EnvState> {
+    return this.navigate(this._searchEngineUrl);
+  }
+
+  async navigate(url: string): Promise<EnvState> {
+    let normalizedUrl = url;
+    if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+      normalizedUrl = "https://" + normalizedUrl;
+    }
+    await this._page!.goto(normalizedUrl);
+    await this._page!.waitForLoadState();
+    return this.currentState();
+  }
+
+  async keyCombination(keys: string[]): Promise<EnvState> {
+    // Normalize all keys to the Playwright compatible version.
+    const normalizedKeys = keys.map((k) => PLAYWRIGHT_KEY_MAP[k.toLowerCase()] || k);
+
+    // Press and hold all keys except the last one
+    for (const key of normalizedKeys.slice(0, -1)) {
+      await this._page!.keyboard.down(key);
+    }
+
+    // Press the last key
+    await this._page!.keyboard.press(normalizedKeys[normalizedKeys.length - 1]);
+
+    // Release all keys in reverse order
+    for (const key of normalizedKeys.slice(0, -1).reverse()) {
+      await this._page!.keyboard.up(key);
+    }
+
+    return this.currentState();
+  }
+
+  async dragAndDrop(x: number, y: number, destinationX: number, destinationY: number): Promise<EnvState> {
+    await this.highlightMouse(x, y);
+    await this._page!.mouse.move(x, y);
+    await this._page!.waitForLoadState();
+    await this._page!.mouse.down();
+    await this._page!.waitForLoadState();
+
+    await this.highlightMouse(destinationX, destinationY);
+    await this._page!.mouse.move(destinationX, destinationY);
+    await this._page!.waitForLoadState();
+    await this._page!.mouse.up();
+    return this.currentState();
+  }
+
+  async currentState(): Promise<EnvState> {
+    await this._page!.waitForLoadState();
+    // Even if Playwright reports the page as loaded, it may not be so.
+    // Add a manual sleep to make sure the page has finished rendering.
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const screenshotBytes = await this._page!.screenshot({ type: "png", fullPage: false });
+    return {
+      screenshot: screenshotBytes,
+      url: this._page!.url(),
+    };
+  }
+
+  screenSize(): [number, number] {
+    const viewportSize = this._page?.viewportSize();
+    // If available, try to take the local playwright viewport size.
+    if (viewportSize) {
+      return [viewportSize.width, viewportSize.height];
+    }
+    // If unavailable, fall back to the original provided size.
+    return this._screenSize;
+  }
+
+  async highlightMouse(x: number, y: number): Promise<void> {
+    if (!this._highlightMouse) {
+      return;
+    }
+    await this._page!.evaluate(
+      (coords) => {
+        const elementId = "playwright-feedback-circle";
+        const div = document.createElement("div");
+        div.id = elementId;
+        div.style.pointerEvents = "none";
+        div.style.border = "4px solid red";
+        div.style.borderRadius = "50%";
+        div.style.width = "20px";
+        div.style.height = "20px";
+        div.style.position = "fixed";
+        div.style.zIndex = "9999";
+        document.body.appendChild(div);
+
+        div.hidden = false;
+        div.style.left = coords.x - 10 + "px";
+        div.style.top = coords.y - 10 + "px";
+
+        setTimeout(() => {
+          div.hidden = true;
+        }, 2000);
+      },
+      { x, y },
+    );
+    // Wait a bit for the user to see the cursor.
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+}
