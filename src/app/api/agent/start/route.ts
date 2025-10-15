@@ -35,6 +35,8 @@ export async function POST(request: NextRequest) {
         sessionManager.addScreenshot(session.id, message.data);
       } else if (message.type === "state") {
         sessionManager.updateState(session.id, message.data);
+      } else if (message.type === "iteration") {
+        sessionManager.addIteration(session.id, message.data);
       }
     });
 

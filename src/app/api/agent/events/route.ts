@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { sessionManager, LogEntry } from "@/lib/session-manager";
+import { sessionManager, LogEntry, AgentIteration } from "@/lib/session-manager";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -31,6 +31,12 @@ export async function GET(request: NextRequest) {
         controller.enqueue(encoder.encode(`data: ${data}\n\n`));
       }
 
+      // Send existing iterations
+      for (const iteration of session.iterations) {
+        const data = JSON.stringify({ type: "iteration", data: iteration });
+        controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+      }
+
       // Send current state
       const stateData = JSON.stringify({ type: "state", data: session.state });
       controller.enqueue(encoder.encode(`data: ${stateData}\n\n`));
@@ -51,15 +57,22 @@ export async function GET(request: NextRequest) {
         controller.enqueue(encoder.encode(`data: ${data}\n\n`));
       };
 
+      const onIteration = (iteration: AgentIteration) => {
+        const data = JSON.stringify({ type: "iteration", data: iteration });
+        controller.enqueue(encoder.encode(`data: ${data}\n\n`));
+      };
+
       session.eventEmitter.on("log", onLog);
       session.eventEmitter.on("screenshot", onScreenshot);
       session.eventEmitter.on("state", onState);
+      session.eventEmitter.on("iteration", onIteration);
 
       // Cleanup on close
       request.signal.addEventListener("abort", () => {
         session.eventEmitter.off("log", onLog);
         session.eventEmitter.off("screenshot", onScreenshot);
         session.eventEmitter.off("state", onState);
+        session.eventEmitter.off("iteration", onIteration);
         controller.close();
       });
 

@@ -7,12 +7,19 @@ export interface LogEntry {
   content: string;
 }
 
+export interface AgentIteration {
+  timestamp: number;
+  thoughts: string;
+  commands: string[];
+}
+
 export interface SessionData {
   id: string;
   startUrl: string;
   worker: Worker | null;
   logs: LogEntry[];
   screenshots: string[]; // base64 encoded
+  iterations: AgentIteration[];
   state: "initializing" | "running" | "completed" | "error" | "terminated";
   createdAt: number;
   eventEmitter: EventEmitter;
@@ -29,6 +36,7 @@ class SessionManager {
       worker: null,
       logs: [],
       screenshots: [],
+      iterations: [],
       state: "initializing",
       createdAt: Date.now(),
       eventEmitter: new EventEmitter(),
@@ -69,6 +77,14 @@ class SessionManager {
     if (session) {
       session.state = state;
       session.eventEmitter.emit("state", state);
+    }
+  }
+
+  addIteration(sessionId: string, iteration: AgentIteration): void {
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      session.iterations.push(iteration);
+      session.eventEmitter.emit("iteration", iteration);
     }
   }
 

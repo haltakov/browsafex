@@ -14,7 +14,7 @@ interface WorkerMessage {
 }
 
 interface ParentMessage {
-  type: "log" | "screenshot" | "state";
+  type: "log" | "screenshot" | "state" | "iteration";
   data: any;
 }
 
@@ -61,6 +61,48 @@ const customReporter = {
 
 consola.addReporter(customReporter);
 
+// Helper functions to extract thoughts and commands from agent content
+function extractThoughts(content: any): string | null {
+  if (!content.parts) return null;
+  const textParts: string[] = [];
+  for (const part of content.parts) {
+    if (part.text) {
+      textParts.push(part.text);
+    }
+  }
+  return textParts.length > 0 ? textParts.join(" ").trim() : null;
+}
+
+function extractCommands(content: any): string[] {
+  if (!content.parts) return [];
+  const commands: string[] = [];
+  for (const part of content.parts) {
+    if (part.functionCall) {
+      const fc = part.functionCall;
+      let commandStr = fc.name;
+
+      // Add key arguments to make commands more descriptive
+      if (fc.args) {
+        const keyArgs: string[] = [];
+        if (fc.args.text) keyArgs.push(`"${fc.args.text}"`);
+        if (fc.args.url) keyArgs.push(`"${fc.args.url}"`);
+        if (fc.args.x !== undefined && fc.args.y !== undefined) {
+          keyArgs.push(`(${fc.args.x}, ${fc.args.y})`);
+        }
+        if (fc.args.direction) keyArgs.push(fc.args.direction);
+        if (fc.args.keys) keyArgs.push(fc.args.keys);
+
+        if (keyArgs.length > 0) {
+          commandStr += `: ${keyArgs.join(", ")}`;
+        }
+      }
+
+      commands.push(commandStr);
+    }
+  }
+  return commands;
+}
+
 // Intercept PlaywrightComputer's currentState to capture screenshots
 async function runAgentWithCapture(startUrl: string, instructions: string) {
   try {
@@ -104,6 +146,40 @@ async function runAgentWithCapture(startUrl: string, instructions: string) {
       verbose: true,
       excludedPredefinedFunctions: ["drag_and_drop"],
     });
+
+    // Patch runOneIteration to capture iteration data
+    const originalRunOneIteration = agent.runOneIteration.bind(agent);
+    agent.runOneIteration = async function () {
+      const result = await originalRunOneIteration();
+
+      // After iteration, extract and send structured data
+      // Access the last model response from the agent's contents
+      const agentContents = (agent as any)._contents;
+      if (agentContents && agentContents.length > 0) {
+        // Find the last model response (role: "model" or role: "assistant")
+        for (let i = agentContents.length - 1; i >= 0; i--) {
+          const content = agentContents[i];
+          if (content.role === "model" || content.role === "assistant") {
+            const thoughts = extractThoughts(content);
+            const commands = extractCommands(content);
+
+            if (thoughts || commands.length > 0) {
+              parentPort?.postMessage({
+                type: "iteration",
+                data: {
+                  timestamp: Date.now(),
+                  thoughts: thoughts || "(no reasoning provided)",
+                  commands,
+                },
+              });
+            }
+            break;
+          }
+        }
+      }
+
+      return result;
+    };
 
     // Run the agent loop with custom completion handler
     consola.info("🚀 Starting browser agent...\n");
