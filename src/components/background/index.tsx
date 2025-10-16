@@ -1,6 +1,6 @@
 export default function Background() {
   return (
-    <div className="fixed inset-0 z-10 min-h-screen bg-[#222]">
+    <div className="fixed inset-0 z-10 min-h-[calc(100dvh)] bg-[#222]">
       <picture className="w-full h-full object-cover opacity-30">
         <source
           type="image/avif"
@@ -47,7 +47,7 @@ export default function Background() {
         />
 
         <img
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover opacity-30"
           src="/browsafex_background-hor-2880.jpg"
           alt="Browsafex background"
         />

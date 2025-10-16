@@ -196,11 +196,11 @@ export default function SessionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col p-4">
+    <div className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-gray-50 p-4 flex flex-col">
       <Background />
 
       {/* Top Bar */}
-      <div className="z-20">
+      <div className="z-20 relative mb-2">
         <div className="max-w-[2000px] mx-auto flex items-center justify-between">
           <Link href="/" className="text-lg font-medium text-white hover:text-cyan-300 transition-colors">
             Browsafex
@@ -209,31 +209,39 @@ export default function SessionPage() {
             {state === "running" ? (
               <Loader className="size-12 pl-2" />
             ) : state === "completed" ? (
-              "✅ Completed"
+              <>
+                <span className="hidden sm:inline">✅ Completed</span>
+                <span className="sm:hidden">✅</span>
+              </>
             ) : state === "error" ? (
-              "❌ Error"
+              <>
+                <span className="hidden sm:inline">❌ Error</span>
+                <span className="sm:hidden">❌</span>
+              </>
             ) : (
               ""
             )}
           </div>
           <div className="flex items-center gap-3">
             <Button onClick={handleStartNewSession} size="small" style="outline" color="neutral">
-              New Session
+              <span className="hidden sm:inline">New Session</span>
+              <span className="sm:hidden">New</span>
             </Button>
             <Button onClick={handleFinishTask} size="small" style="outline" color="neutral">
-              Finish Task
+              <span className="hidden sm:inline">Finish Task</span>
+              <span className="sm:hidden">Finish</span>
             </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden z-20">
-        <div className="max-w-[2000px] mx-auto p-6 h-full space-y-4">
+      <div className="flex-1 overflow-hidden z-20 relative">
+        <div className="max-w-[2000px] mx-auto h-full">
           {/* Main Content: Browser View + Activity */}
-          <div className="flex flex-col xl:flex-row gap-4 h-[calc(100vh-180px)]">
+          <div className="flex flex-col md:flex-row gap-4 h-full">
             {/* Browser View */}
-            <div className="flex-1 rounded-lg overflow-hidden">
+            <div className="rounded-lg overflow-hidden h-[30%] xl:h-full xl:flex-1">
               <div className="w-full h-full flex items-start justify-center">
                 {currentScreenshot ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -251,9 +259,9 @@ export default function SessionPage() {
             </div>
 
             {/* Agent Activity - Chat Style */}
-            <div className="max-w-2xl rounded-lg shadow flex flex-col space-y-2">
+            <div className="max-w-2xl rounded-lg shadow flex flex-col space-y-2 h-[70%] xl:h-full xl:flex-1">
               {/* Activity Messages */}
-              <div className="flex-1 overflow-y-auto space-y-3">
+              <div className="flex-1 overflow-y-auto overflow-x-hidden space-y-3 min-h-0">
                 {activity.length === 0 ? (
                   <div className="text-gray-400 text-sm">No activity yet...</div>
                 ) : (
@@ -294,7 +302,7 @@ export default function SessionPage() {
 
               {/* Message Input */}
               <div>
-                <div className="flex gap-2 items-center relative">
+                <div className="flex gap-2 items-center relative p-1">
                   <textarea
                     value={currentPrompt}
                     onChange={(e) => setCurrentPrompt(e.target.value)}
@@ -323,18 +331,24 @@ export default function SessionPage() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="flex justify-center">
-            <button onClick={() => setShowDebugLogs(!showDebugLogs)} className="text-sm text-gray-500 cursor-pointer">
-              {showDebugLogs ? "Hide" : "Show"} Debug
-            </button>
-          </div>
-
-          {/* Debug Logs (Collapsible) */}
-          {showDebugLogs && (
-            <div className="bg-white/80 backdrop-blur-lg rounded-lg shadow p-4 mb-4">
-              <h2 className="text-sm font-semibold mb-3 text-gray-900">Debug Logs</h2>
-              <div className="border border-gray-300 rounded bg-gray-50 p-3 h-64 overflow-y-auto font-mono text-xs">
+      {/* Debug Toggle - Fixed at bottom */}
+      {showDebugLogs && (
+        <div className="z-20 relative mt-2">
+          <div className="max-w-[2000px] mx-auto">
+            <div className="bg-white/80 backdrop-blur-lg rounded-lg shadow p-4">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-sm font-semibold text-gray-900">Debug Logs</h2>
+                <button
+                  onClick={() => setShowDebugLogs(false)}
+                  className="text-sm text-gray-500 hover:text-gray-700 cursor-pointer"
+                >
+                  Hide
+                </button>
+              </div>
+              <div className="border border-gray-300 rounded bg-gray-50 p-3 h-32 overflow-y-auto font-mono text-xs">
                 {logs.length === 0 ? (
                   <div className="text-gray-400">No logs yet...</div>
                 ) : (
@@ -350,9 +364,20 @@ export default function SessionPage() {
                 )}
               </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {!showDebugLogs && (
+        <div className="z-20 relative mt-2 flex justify-center">
+          <button
+            onClick={() => setShowDebugLogs(true)}
+            className="text-sm text-gray-400 hover:text-gray-600 cursor-pointer"
+          >
+            Show Debug
+          </button>
+        </div>
+      )}
     </div>
   );
 }
