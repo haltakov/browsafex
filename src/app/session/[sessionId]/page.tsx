@@ -312,7 +312,7 @@ export default function SessionPage() {
                         handleSendMessage();
                       }
                     }}
-                    className="flex-1 pl-3 pr-10 py-2 text-sm rounded-xl focus:ring-2 focus:ring-cyan-400 focus:outline-none bg-transparenttext-white backdrop-blur-lg border border-gray-700 placeholder-gray-500"
+                    className="flex-1 pl-3 pr-10 py-2 text-sm text-white rounded-xl focus:ring-2 focus:ring-cyan-400 focus:outline-none bg-transparenttext-white backdrop-blur-lg border border-gray-700 placeholder-gray-500"
                     rows={2}
                     placeholder={
                       state === "completed" ? "Enter follow-up instructions..." : "Agent is still working..."
