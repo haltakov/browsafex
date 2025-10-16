@@ -93,7 +93,7 @@ export class PlaywrightComputer {
   private async _waitForLoadStateSafe(): Promise<void> {
     try {
       await this._page!.waitForLoadState("load", { timeout: 60000 });
-    } catch (error: any) {
+    } catch {
       // If waitForLoadState times out, log warning and continue
       // The page might still be in a usable state even if not fully loaded
       consola.warn("Page still loading after timeout, continuing anyway...");
@@ -105,13 +105,19 @@ export class PlaywrightComputer {
 
     consola.info(`Connecting to existing Chrome instance at ${browserUrl}...`);
     this._browser = await chromium.connectOverCDP(browserUrl);
-    this._context = await this._browser.newContext({
-      viewport: {
-        width: this._screenSize[0],
-        height: this._screenSize[1],
-      },
-    });
+
+    // Use the existing default context instead of creating a new one
+    // This allows us to share cookies, localStorage, and authentication state
+    const contexts = this._browser.contexts();
+    this._context = contexts.length > 0 ? contexts[0] : await this._browser.newContext();
+
     this._page = await this._context.newPage();
+
+    // Set the viewport size after creating the page
+    await this._page.setViewportSize({
+      width: this._screenSize[0],
+      height: this._screenSize[1],
+    });
 
     // Set default timeout to 60 seconds for all operations
     this._page.setDefaultTimeout(60000);
