@@ -106,10 +106,9 @@ export class PlaywrightComputer {
     consola.info(`Connecting to existing Chrome instance at ${browserUrl}...`);
     this._browser = await chromium.connectOverCDP(browserUrl);
 
-    // Use the existing default context instead of creating a new one
-    // This allows us to share cookies, localStorage, and authentication state
-    const contexts = this._browser.contexts();
-    this._context = contexts.length > 0 ? contexts[0] : await this._browser.newContext();
+    // Create a new context for each session to ensure isolation
+    // Each session will have its own cookies, localStorage, and authentication state
+    this._context = await this._browser.newContext();
 
     this._page = await this._context.newPage();
 

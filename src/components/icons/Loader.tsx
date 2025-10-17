@@ -1,7 +1,7 @@
 export default function Loader({ className }: { className?: string }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" className={className}>
-      <circle fill="#FFFFFF" stroke="#FFFFFF" stroke-width="15" r="15" cx="40" cy="65">
+      <circle fill="#FFFFFF" stroke="#FFFFFF" strokeWidth="15" r="15" cx="40" cy="65">
         <animate
           attributeName="cy"
           calcMode="spline"
@@ -12,7 +12,7 @@ export default function Loader({ className }: { className?: string }) {
           begin="-.4"
         ></animate>
       </circle>
-      <circle fill="#FFFFFF" stroke="#FFFFFF" stroke-width="15" r="15" cx="100" cy="65">
+      <circle fill="#FFFFFF" stroke="#FFFFFF" strokeWidth="15" r="15" cx="100" cy="65">
         <animate
           attributeName="cy"
           calcMode="spline"
@@ -23,7 +23,7 @@ export default function Loader({ className }: { className?: string }) {
           begin="-.2"
         ></animate>
       </circle>
-      <circle fill="#FFFFFF" stroke="#FFFFFF" stroke-width="15" r="15" cx="160" cy="65">
+      <circle fill="#FFFFFF" stroke="#FFFFFF" strokeWidth="15" r="15" cx="160" cy="65">
         <animate
           attributeName="cy"
           calcMode="spline"
