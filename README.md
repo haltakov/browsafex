@@ -10,6 +10,13 @@ Check out this demo video to see Browsafex in action:
 
 </div>
 
+## Prerequisites
+
+- Node.js (version 18 or higher)
+- Yarn package manager
+- Google Chrome browser
+- Gemini API key
+
 ## Configuration
 
 To use the web app, you need to provide minimal configuration by adding your Gemini API key and a working Chrome browser instance to the `.env` file.
@@ -65,6 +72,8 @@ Then start the web app with the following command:
 yarn dev
 ```
 
+The web app will be available at `http://localhost:3000` by default. You can change the port by setting the `PORT` environment variable.
+
 To start the web app in production mode:
 
 ```
@@ -83,6 +92,25 @@ This is an early prototype of a UI to interact with the Gemini Computer Use mode
 - Sessions are stored in memory and are lost when the server restarts
 - The browser instance sometimes gets stuck and needs to be restarted
 - No safety checks for potentially dangerous actions
+
+## Security Considerations
+
+⚠️ **Important Security Warning**
+
+This application provides AI agents with direct browser control capabilities. Please be aware of the following security risks:
+
+- **No built-in safety checks**: The agent can perform any action a human could do in a browser
+- **Sensitive data exposure**: The agent can access any information visible in the browser
+- **Financial transactions**: The agent could potentially make purchases or transfers
+- **Account access**: The agent can log into accounts and access personal data
+
+**Recommendations:**
+
+- Only use this tool on trusted websites
+- Never provide access to banking or financial websites
+- Monitor the agent's actions closely
+- Use in a controlled environment with limited network access
+- Consider using a separate browser profile for testing
 
 ## About
 
