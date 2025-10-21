@@ -69,8 +69,6 @@ BROWSER_URL=http://localhost:9222
 KERNEL_API_KEY=your-kernel-api-key
 ```
 
-**Note:** Sometimes the browser instance may not be closed properly and may leave a Chrome process running in the background, please check manually.
-
 **Note:** When `KERNEL_API_KEY` is set, the `BROWSER_URL` environment variable will be ignored, and the app will automatically use Kernel's browser service.
 
 ### Gemini API Key
@@ -111,7 +109,6 @@ This is an early prototype of a UI to interact with the Gemini Computer Use mode
 - Sessions are stored in memory and are lost when the server restarts
 - The browser instance sometimes gets stuck and needs to be restarted
 - No safety checks for potentially dangerous actions
-- If using Kernel, the browser instance may not be closed properly and may leave a Chrome process running in the background, please check manually
 
 ## Security Considerations
 
