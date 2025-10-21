@@ -59,7 +59,8 @@ export class PlaywrightComputer {
   private _browser?: Browser;
   private _context?: BrowserContext;
   private _page?: Page;
-  private _kernelBrowser?: any; // Kernel browser instance for cleanup
+  private _kernelClient?: Kernel;
+  private _kernelBrowser?: Kernel.Browsers.BrowserCreateResponse;
 
   /**
    * Connects to a local Playwright instance.
@@ -108,8 +109,11 @@ export class PlaywrightComputer {
       consola.info("Using Kernel browser service...");
 
       try {
-        const kernel = new Kernel({ apiKey: process.env.KERNEL_API_KEY });
-        this._kernelBrowser = await kernel.browsers.create();
+        this._kernelClient = new Kernel({ apiKey: process.env.KERNEL_API_KEY });
+        this._kernelBrowser = await this._kernelClient.browsers.create({
+          viewport: { width: this._screenSize[0], height: this._screenSize[1] },
+          timeout_seconds: 120,
+        });
 
         consola.info(`Connecting to Kernel browser at ${this._kernelBrowser.cdp_ws_url}...`);
         this._browser = await chromium.connectOverCDP(this._kernelBrowser.cdp_ws_url);
@@ -154,10 +158,11 @@ export class PlaywrightComputer {
     }
 
     // Terminate Kernel browser if it was created
-    if (this._kernelBrowser) {
+    if (this._kernelBrowser && this._kernelClient) {
       try {
         consola.info("Terminating Kernel browser...");
-        await this._kernelBrowser.terminate();
+        await this._kernelClient.browsers.deleteByID(this._kernelBrowser.session_id);
+
         consola.success("Kernel browser terminated successfully.");
       } catch (error) {
         consola.error("Failed to terminate Kernel browser:", error);
