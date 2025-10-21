@@ -6,7 +6,7 @@ Check out this demo video to see Browsafex in action:
 
 <div align="center">
 
-[![Browsafex Demo Video](./img/browsafex-demo-screenshot.jpg)](https://youtu.be/2qL5L4xzgWo)
+[![Browsafex Demo Video](./public/browsafex-demo-screenshot.jpg)](https://youtu.be/2qL5L4xzgWo)
 
 </div>
 
