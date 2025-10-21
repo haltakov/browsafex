@@ -87,6 +87,39 @@ export default function Home() {
           </Button>
         </div>
       </div>
+
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-center text-sm text-white/70 z-30 w-full px-8">
+        <p>
+          This is an open-source wrapper for the{" "}
+          <a
+            href="https://blog.google/technology/google-deepmind/gemini-computer-use-model/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-cyan-300 hover:text-cyan-200 underline"
+          >
+            Gemini 2.5 Computer Use model
+          </a>
+          . Check out the project on{" "}
+          <a
+            href="https://github.com/haltakov/browsafex"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-cyan-300 hover:text-cyan-200 underline"
+          >
+            GitHub
+          </a>
+          . Created by{" "}
+          <a
+            href="https://haltakov.net"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-cyan-300 hover:text-cyan-200 underline"
+          >
+            Vladimit Haltakov
+          </a>
+          .
+        </p>
+      </div>
     </div>
   );
 }
