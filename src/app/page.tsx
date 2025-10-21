@@ -113,7 +113,7 @@ export default function Home() {
             rel="noopener noreferrer"
             className="text-cyan-300 hover:text-cyan-200 underline"
           >
-            Vladimit Haltakov
+            Vladimir Haltakov
           </a>
           .
         </p>

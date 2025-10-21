@@ -11,7 +11,7 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: "Browsafex",
   description: "Web UI for Gemini-powered browser automation agent",
-  authors: [{ name: "Vladimit Haltakov", url: "https://haltakov.net" }],
+  authors: [{ name: "Vladimir Haltakov", url: "https://haltakov.net" }],
 };
 
 export const viewport: Viewport = {
