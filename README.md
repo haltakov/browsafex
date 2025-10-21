@@ -2,6 +2,14 @@
 
 This is a web application wrapper for the [Gemini 2.5 Computer Use model](https://blog.google/technology/google-deepmind/gemini-computer-use-model/). It connects to a web browser and implements all the functionality required by the model to interact with websites.
 
+Check out this demo video to see Browsafex in action:
+
+<div align="center">
+
+[![Browsafex Demo Video](./img/browsafex-demo-screenshot.jpg)](https://youtu.be/2qL5L4xzgWo)
+
+</div>
+
 ## Configuration
 
 To use the web app you need to do a minimal configuration by providing your Gemini API key and a working Chrome browser instance in the `.env` file.
