@@ -14,25 +14,24 @@ Check out this demo video to see Browsafex in action:
 
 - Node.js (version 18 or higher)
 - Yarn package manager
-- Google Chrome browser
 - Gemini API key
+- Either a local Google Chrome browser OR a Kernel API key
 
 ## Configuration
 
-To use the web app, you need to provide minimal configuration by adding your Gemini API key and a working Chrome browser instance to the `.env` file.
+To use the web app, you need to provide minimal configuration by adding your Gemini API key and browser configuration to the `.env` file.
+
+### Required Configuration
 
 ```
 GEMINI_API_KEY=your-api-key
-BROWSER_URL=http://localhost:9222
 ```
 
-### Gemini API Key
+### Browser Configuration (Choose One Option)
 
-You can obtain a Gemini API key from the Google Cloud Console or more easily from the [Google AI Studio](https://aistudio.google.com/app/api-keys).
+#### Option 1: Local Chrome Browser (Default)
 
-### Browser Instance
-
-The app needs to connect to an existing Chrome browser instance with remote debugging enabled using the `--remote-debugging-port` flag. You can start one on your local machine with the following commands, depending on your operating system:
+The app can connect to an existing Chrome browser instance with remote debugging enabled using the `--remote-debugging-port` flag. You can start one on your local machine with the following commands, depending on your operating system:
 
 **macOS:**
 
@@ -57,6 +56,26 @@ Then set the `BROWSER_URL` environment variable to the URL of the Chrome instanc
 ```
 BROWSER_URL=http://localhost:9222
 ```
+
+#### Option 2: Kernel Browser Service (Recommended for Production)
+
+[Kernel](https://www.onkernel.com/) provides browsers-as-a-service in the cloud, eliminating the need to manage local browser instances. They offer a nice free tier that you can use to experiment with the app.
+
+1. Sign up for a Kernel account at [https://www.onkernel.com/](https://www.onkernel.com/)
+2. Get your API key from the Kernel dashboard
+3. Add it to your `.env` file:
+
+```
+KERNEL_API_KEY=your-kernel-api-key
+```
+
+**Note:** Sometimes the browser instance may not be closed properly and may leave a Chrome process running in the background, please check manually.
+
+**Note:** When `KERNEL_API_KEY` is set, the `BROWSER_URL` environment variable will be ignored, and the app will automatically use Kernel's browser service.
+
+### Gemini API Key
+
+You can obtain a Gemini API key from the Google Cloud Console or more easily from the [Google AI Studio](https://aistudio.google.com/app/api-keys).
 
 ## Usage
 
@@ -92,6 +111,7 @@ This is an early prototype of a UI to interact with the Gemini Computer Use mode
 - Sessions are stored in memory and are lost when the server restarts
 - The browser instance sometimes gets stuck and needs to be restarted
 - No safety checks for potentially dangerous actions
+- If using Kernel, the browser instance may not be closed properly and may leave a Chrome process running in the background, please check manually
 
 ## Security Considerations
 

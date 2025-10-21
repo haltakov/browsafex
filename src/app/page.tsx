@@ -7,10 +7,8 @@ import Button from "@/components/button";
 
 export default function Home() {
   const router = useRouter();
-  const [startUrl, setStartUrl] = useState("https://www.metmuseum.org");
-  const [initialPrompt, setInitialPrompt] = useState(
-    "Go to the Metropolitan Museum of Art website and find a single public domain photos for ukiyo-e (japanese woodblock prints)"
-  );
+  const [startUrl, setStartUrl] = useState("https://www.google.com");
+  const [initialPrompt, setInitialPrompt] = useState("");
   const [isStarting, setIsStarting] = useState(false);
 
   const handleStartSession = async () => {
@@ -61,7 +59,7 @@ export default function Home() {
               onChange={(e) => setInitialPrompt(e.target.value)}
               className="w-full p-4 rounded-3xl focus:ring-2 focus:ring-cyan-400 focus:outline-none bg-white/80 backdrop-blur-lg"
               rows={4}
-              placeholder="Find the best restaurant in..."
+              placeholder="Find a public domain image of a cat..."
             />
           </div>
 
