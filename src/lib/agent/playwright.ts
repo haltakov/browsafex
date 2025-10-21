@@ -1,5 +1,6 @@
 import { chromium, Browser, BrowserContext, Page } from "playwright";
 import { consola } from "consola";
+import { Kernel } from "@onkernel/sdk";
 
 // Mapping of keys to Playwright keys
 const PLAYWRIGHT_KEY_MAP: Record<string, string> = {
@@ -58,6 +59,7 @@ export class PlaywrightComputer {
   private _browser?: Browser;
   private _context?: BrowserContext;
   private _page?: Page;
+  private _kernelBrowser?: any; // Kernel browser instance for cleanup
 
   /**
    * Connects to a local Playwright instance.
@@ -101,10 +103,28 @@ export class PlaywrightComputer {
   }
 
   async start(): Promise<this> {
-    const browserUrl = process.env.BROWSER_URL || "http://localhost:9222";
+    // Check if Kernel API key is provided
+    if (process.env.KERNEL_API_KEY) {
+      consola.info("Using Kernel browser service...");
 
-    consola.info(`Connecting to existing Chrome instance at ${browserUrl}...`);
-    this._browser = await chromium.connectOverCDP(browserUrl);
+      try {
+        const kernel = new Kernel({ apiKey: process.env.KERNEL_API_KEY });
+        this._kernelBrowser = await kernel.browsers.create();
+
+        consola.info(`Connecting to Kernel browser at ${this._kernelBrowser.cdp_ws_url}...`);
+        this._browser = await chromium.connectOverCDP(this._kernelBrowser.cdp_ws_url);
+
+        consola.success("Connected to Kernel browser instance.");
+      } catch (error) {
+        consola.error("Failed to create Kernel browser:", error);
+        throw new Error(`Failed to create Kernel browser: ${error}`);
+      }
+    } else {
+      const browserUrl = process.env.BROWSER_URL || "http://localhost:9222";
+      consola.info(`Connecting to existing Chrome instance at ${browserUrl}...`);
+      this._browser = await chromium.connectOverCDP(browserUrl);
+      consola.success("Connected to existing Chrome instance.");
+    }
 
     // Create a new context for each session to ensure isolation
     // Each session will have its own cookies, localStorage, and authentication state
@@ -125,14 +145,23 @@ export class PlaywrightComputer {
 
     this._context.on("page", (newPage) => this._handleNewPage(newPage));
 
-    consola.success("Connected to existing Chrome instance.");
-
     return this;
   }
 
   async stop(): Promise<void> {
     if (this._context) {
       await this._context.close();
+    }
+
+    // Terminate Kernel browser if it was created
+    if (this._kernelBrowser) {
+      try {
+        consola.info("Terminating Kernel browser...");
+        await this._kernelBrowser.terminate();
+        consola.success("Kernel browser terminated successfully.");
+      } catch (error) {
+        consola.error("Failed to terminate Kernel browser:", error);
+      }
     }
   }
 
