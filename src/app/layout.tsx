@@ -9,7 +9,7 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Browser Agent",
+  title: "Browsafex",
   description: "AI-powered browser automation agent",
 };
 

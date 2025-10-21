@@ -1,4 +1,4 @@
-# Browser Agent
+# Browsafex
 
 A web interface for controlling a Gemini-powered browser automation agent with real-time screenshot and log streaming.
 
